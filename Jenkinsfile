@@ -4,14 +4,14 @@ pipeline {
         jdk 'Java17'
         maven 'Maven3'
     }
-	 environment {
+    environment {
 	    APP_NAME = "register-app-pipeline"
             RELEASE = "1.0.0"
             DOCKER_USER = "souravbadaik27"
             DOCKER_PASS = 'dockerhub'
             IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
             IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-            JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
+	    JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
     }
     stages{
         stage("Cleanup Workspace"){
@@ -24,20 +24,22 @@ pipeline {
                 steps {
                     git branch: 'main', credentialsId: 'github', url: 'https://github.com/souravbadaik/register-app'
                 }
-        } 
-        
+        }
+
         stage("Build Application"){
             steps {
                 sh "mvn clean package"
             }
-        }
 
-        stage("Test Application"){
+       }
+
+       stage("Test Application"){
            steps {
                  sh "mvn test"
            }
-        }
-        stage("SonarQube Analysis"){
+       }
+
+       stage("SonarQube Analysis"){
            steps {
 	           script {
 		        withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token') { 
@@ -55,7 +57,8 @@ pipeline {
             }
 
         }
-	    stage("Build & Push Docker Image") {
+
+        stage("Build & Push Docker Image") {
             steps {
                 script {
                     docker.withRegistry('',DOCKER_PASS) {
@@ -68,15 +71,18 @@ pipeline {
                     }
                 }
             }
-    }
-	    stage("Trivy Scan") {
+
+       }
+
+       stage("Trivy Scan") {
            steps {
                script {
 	            sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image souravbadaik27/register-app-pipeline:latest --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
                }
-	 }
-}
-	    stage ('Cleanup Artifacts') {
+           }
+       }
+
+       stage ('Cleanup Artifacts') {
            steps {
                script {
                     sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG}"
@@ -106,5 +112,4 @@ pipeline {
                      mimeType: 'text/html',to: "bntbdk10@gmail.com"
       }      
    }
-}
 }
